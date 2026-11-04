@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ты — моя вселенная 💖</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+:root{color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;background:radial-gradient(ellipse at 50% 38%,#24164a 0%,#0c0b20 45%,#050610 100%);color:#fff;font-family:Manrope,system-ui,sans-serif;overflow-x:hidden}
+#stars{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
+main{position:relative;z-index:1;min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:38px 18px 48px;text-align:center}
+.eyebrow{font-size:11px;letter-spacing:.34em;text-transform:uppercase;color:#c5b6ff;margin:4px 0 10px}
+h1{font-size:clamp(30px,6vw,58px);line-height:1.06;margin:0;font-weight:800;letter-spacing:-.045em;text-shadow:0 0 30px #bd8cff55}
+.sub{color:#c9c2e1;font-size:14px;margin:12px 0 0}
+#universe{width:min(94vw,720px);height:min(76vw,550px);min-height:330px;max-height:550px;position:relative;margin:0 auto}
+canvas#space{width:100%;height:100%;display:block;outline:none}
+.hint{font-size:11px;color:#aaa0c9;letter-spacing:.12em;margin-top:-4px}
+.panel{width:min(92vw,620px);margin:24px auto 0;padding:22px;border:1px solid #ffffff20;border-radius:24px;background:linear-gradient(145deg,#ffffff12,#ffffff05);backdrop-filter:blur(14px);box-shadow:0 18px 70px #0005}
+.panel h2{font-size:17px;margin:0 0 14px}
+#compliment{min-height:54px;display:grid;place-items:center;color:#ffe0f1;font-size:clamp(15px,3vw,19px);font-weight:600;padding:0 8px}
+.actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:15px}
+button,.musiclink{border:1px solid #e9b9ff66;color:white;background:linear-gradient(110deg,#8c55c9,#d05c9c);padding:12px 18px;border-radius:999px;font:700 13px Manrope,sans-serif;cursor:pointer;box-shadow:0 6px 24px #b15bc533;transition:transform .2s,filter .2s;text-decoration:none}
+button:hover,.musiclink:hover{transform:translateY(-2px);filter:brightness(1.13)}
+button.secondary{background:#ffffff0d;border-color:#ffffff35;box-shadow:none}
+.musicnote{font-size:12px;color:#b9b0d0;margin:12px 0 0}
+#player{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none}
+footer{color:#81799c;font-size:11px;margin-top:26px;letter-spacing:.08em}
+@media(max-width:520px){main{padding-top:28px}#universe{height:390px;min-height:320px}.panel{padding:18px 14px}}
+</style>
+</head>
+<body>
+<canvas id="stars"></canvas>
+<main>
+  <div class="eyebrow">a little universe, just for you</div>
+  <h1>Ты — моя вселенная <span style="color:#ff9bc9">💖</span></h1>
+  <p class="sub">Где бы ты ни была, моё сердце всегда найдёт тебя.</p>
+  <div id="universe"><canvas id="space"></canvas></div>
+  <div class="hint">✦ ПОТЯНИ, ЧТОБЫ ПОВЕРНУТЬ ВСЕЛЕННУЮ ✦</div>
+
+  <section class="panel">
+    <h2>Немного нежности для тебя ✨</h2>
+    <div id="compliment">Ты красивее любого созвездия.</div>
+    <div class="actions">
+      <button id="complimentBtn">Ещё комплимент 💌</button>
+      <button class="secondary" id="surpriseBtn">Секретное послание ✨</button>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>Наша космическая мелодия 🎵</h2>
+    <div class="actions">
+      <button id="musicBtn">▶ Включить Infinity</button>
+      <a class="musiclink" href="https://www.youtube.com/watch?v=PWqEPKduGm8" target="_blank" rel="noopener">Открыть песню ↗</a>
+    </div>
+    <p class="musicnote">Jaymes Young — Infinity · Музыка запускается по нажатию.</p>
+    <div id="player"></div>
+  </section>
+  <footer>MADE WITH A LITTLE BIT OF MAGIC & A LOT OF HEART ♡</footer>
+</main>
+<script type="module">
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js';
+
+const canvas=document.querySelector('#space');
+const scene=new THREE.Scene();
+const camera=new THREE.PerspectiveCamera(42,1,.1,100);
+camera.position.set(0,0,9);
+const renderer=new THREE.WebGLRenderer({canvas,alpha:true,antialias:true});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+const root=new THREE.Group();scene.add(root);
+
+// Planet surface: a generated, softly marbled texture.
+const texCanvas=document.createElement('canvas');texCanvas.width=1024;texCanvas.height=512;
+const ctx=texCanvas.getContext('2d');
+const grad=ctx.createLinearGradient(0,0,1024,512);
+grad.addColorStop(0,'#182a67');grad.addColorStop(.35,'#59439c');grad.addColorStop(.68,'#bd5f9b');grad.addColorStop(1,'#1d3675');
+ctx.fillStyle=grad;ctx.fillRect(0,0,1024,512);
+for(let i=0;i<110;i++){
+ const x=Math.random()*1024,y=Math.random()*512,r=15+Math.random()*100;
+ const g=ctx.createRadialGradient(x,y,0,x,y,r);
+ g.addColorStop(0,`rgba(${100+Math.random()*100},${90+Math.random()*80},255,${.08+Math.random()*.16})`);g.addColorStop(1,'rgba(20,20,70,0)');
+ ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fill();
+}
+for(let i=0;i<18;i++){ctx.strokeStyle='rgba(255,210,245,.10)';ctx.lineWidth=2+Math.random()*7;ctx.beginPath();ctx.moveTo(Math.random()*1024,Math.random()*512);ctx.bezierCurveTo(Math.random()*1024,Math.random()*512,Math.random()*1024,Math.random()*512,Math.random()*1024,Math.random()*512);ctx.stroke();}
+const texture=new THREE.CanvasTexture(texCanvas);texture.colorSpace=THREE.SRGBColorSpace;
+const planet=new THREE.Mesh(new THREE.SphereGeometry(1.55,96,96),new THREE.MeshStandardMaterial({map:texture,roughness:.72,metalness:.12}));
+root.add(planet);
+const glow=new THREE.Mesh(new THREE.SphereGeometry(1.63,64,64),new THREE.MeshBasicMaterial({color:0xc18aff,transparent:true,opacity:.10,side:THREE.BackSide}));
+root.add(glow);
+scene.add(new THREE.AmbientLight(0x9b8cff,1.5));
+const light=new THREE.PointLight(0xffc5e7,90,30);light.position.set(4,4,6);scene.add(light);
+const blue=new THREE.PointLight(0x627cff,65,25);blue.position.set(-5,-2,-3);scene.add(blue);
+
+// Three tilted orbital rings.
+const ringGroup=new THREE.Group();root.add(ringGroup);
+const ringColors=[0xffa9d2,0xbba5ff,0x83d9ff];
+[2.15,2.32,2.49].forEach((r,i)=>{
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(r,.018,8,220),new THREE.MeshStandardMaterial({color:ringColors[i],emissive:ringColors[i],emissiveIntensity:1.35,metalness:.5,roughness:.3}));
+ ring.rotation.x=1.05+i*.10;ring.rotation.y=.2+i*.15;ringGroup.add(ring);
+});
+// Text labels distributed around the orbital plane.
+const phrases=['Ты мне нравишься','I like you','Je t’aime bien','Me gustas','Mi piaci','Ich mag dich','我喜欢你','好きです','Мне ты очень нравишься','Gosto de você','أنت تعجبني','Я скучаю по тебе'];
+function makeLabel(text){
+ const c=document.createElement('canvas');c.width=512;c.height=96;const g=c.getContext('2d');
+ g.font='bold 34px Manrope, sans-serif';g.textAlign='center';g.textBaseline='middle';
+ g.shadowColor='#ff9ecf';g.shadowBlur=18;g.fillStyle='#fff0fa';g.fillText(text,256,48);
+ const t=new THREE.CanvasTexture(c);t.colorSpace=THREE.SRGBColorSpace;
+ const s=new THREE.Sprite(new THREE.SpriteMaterial({map:t,transparent:true,depthWrite:false}));
+ s.scale.set(1.55,.29,1);return s;
+}
+phrases.forEach((p,i)=>{
+ const a=i/phrases.length*Math.PI*2;
+ const s=makeLabel(p);s.position.set(Math.cos(a)*2.38,Math.sin(a)*.82,Math.sin(a)*.25);
+ ringGroup.add(s);
+});
+const starsGeo=new THREE.BufferGeometry(),starPos=[];
+for(let i=0;i<900;i++)starPos.push((Math.random()-.5)*24,(Math.random()-.5)*16,(Math.random()-.5)*18);
+starsGeo.setAttribute('position',new THREE.Float32BufferAttribute(starPos,3));
+const starField=new THREE.Points(starsGeo,new THREE.PointsMaterial({color:0xffffff,size:.025,transparent:true,opacity:.8}));
+scene.add(starField);
+let pointerDown=false,lastX=0,lastY=0,rotX=0,rotY=0;
+canvas.addEventListener('pointerdown',e=>{pointerDown=true;lastX=e.clientX;lastY=e.clientY;canvas.setPointerCapture(e.pointerId)});
+canvas.addEventListener('pointerup',()=>pointerDown=false);
+canvas.addEventListener('pointermove',e=>{if(!pointerDown)return;rotY+=(e.clientX-lastX)*.006;rotX+=(e.clientY-lastY)*.006;lastX=e.clientX;lastY=e.clientY});
+function resize(){const w=canvas.clientWidth,h=canvas.clientHeight;renderer.setSize(w,h,false);camera.aspect=w/h;camera.updateProjectionMatrix()}
+new ResizeObserver(resize).observe(canvas);resize();
+const clock=new THREE.Clock();
+function animate(){requestAnimationFrame(animate);const t=clock.getElapsedTime();planet.rotation.y+=.0018;root.rotation.x+=(rotX-root.rotation.x)*.035;root.rotation.y+=(rotY-root.rotation.y)*.035;ringGroup.rotation.z=Math.sin(t*.18)*.045;starField.rotation.y=t*.008;renderer.render(scene,camera)}
+animate();
+
+// Background twinkles.
+const bg=document.querySelector('#stars'),bctx=bg.getContext('2d');let dots=[];
+function bgResize(){bg.width=innerWidth*devicePixelRatio;bg.height=innerHeight*devicePixelRatio;dots=Array.from({length:130},()=>({x:Math.random()*bg.width,y:Math.random()*bg.height,r:Math.random()*1.5+.3,a:Math.random(),v:Math.random()*.012+.003}))}
+addEventListener('resize',bgResize);bgResize();
+function twinkle(){bctx.clearRect(0,0,bg.width,bg.height);for(const d of dots){d.a+=d.v;if(d.a>1||d.a<.15)d.v*=-1;bctx.globalAlpha=Math.max(.1,Math.min(.9,d.a));bctx.fillStyle='#fff';bctx.beginPath();bctx.arc(d.x,d.y,d.r*devicePixelRatio,0,Math.PI*2);bctx.fill()}requestAnimationFrame(twinkle)}twinkle();
+</script>
+<script>
+const compliments=[
+'Твоя улыбка могла бы освещать целые галактики. ✨',
+'С тобой даже обычный день становится особенным. 💗',
+'В тебе есть что-то совершенно неповторимое.',
+'Если бы красота была звёздой, ты была бы целой галактикой. 🌌',
+'Твой взгляд — моё любимое место во Вселенной.',
+'Ты заслуживаешь самого нежного и искреннего счастья.',
+'Мне нравится даже то, как ты просто существуешь. 🫶',
+'Из всех чудес этой Вселенной я бы снова выбрал тебя.'
+];
+let last=-1;
+function nextCompliment(){let n;do{n=Math.floor(Math.random()*compliments.length)}while(n===last);last=n;document.querySelector('#compliment').textContent=compliments[n]}
+document.querySelector('#complimentBtn').addEventListener('click',nextCompliment);
+document.querySelector('#surpriseBtn').addEventListener('click',()=>{document.querySelector('#compliment').textContent='Если бы мне подарили целую Вселенную, я всё равно искал бы в ней тебя. 💖';document.querySelector('#compliment').animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'translateY(0)'}],{duration:500})});
+let playing=false;
+document.querySelector('#musicBtn').addEventListener('click',()=>{
+ const player=document.querySelector('#player'),btn=document.querySelector('#musicBtn');
+ if(!playing){player.innerHTML='<iframe width="1" height="1" src="https://www.youtube-nocookie.com/embed/PWqEPKduGm8?autoplay=1&loop=1&playlist=PWqEPKduGm8" title="Jaymes Young - Infinity" allow="autoplay; encrypted-media" referrerpolicy="strict-origin-when-cross-origin"></iframe>';btn.textContent='Ⅱ Пауза музыки';playing=true}
+ else{player.innerHTML='';btn.textContent='▶ Включить Infinity';playing=false}
+});
+</script>
+</body>
+</html>
